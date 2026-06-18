@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { listDrones, updateDroneStatus } from '../api/drones';
 import { DroneEvent, DroneFilters, TriageStatus } from '../types';
 import StatusBadge from './StatusBadge';
@@ -10,6 +11,7 @@ interface Props {
 
 export default function DroneTable({ filters }: Props) {
   const queryClient = useQueryClient();
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
 
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ['drones', filters],
@@ -28,8 +30,12 @@ export default function DroneTable({ filters }: Props) {
   const { mutate: triage, isPending: isTriaging, variables: triageVars } = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TriageStatus }) =>
       updateDroneStatus(id, status),
-    onSuccess: () => {
+    onSuccess: (_data, { id }) => {
+      setRowErrors((prev) => { const next = { ...prev }; delete next[id]; return next; });
       queryClient.invalidateQueries({ queryKey: ['drones'] });
+    },
+    onError: (err, { id }) => {
+      setRowErrors((prev) => ({ ...prev, [id]: (err as Error).message }));
     },
   });
 
@@ -85,6 +91,12 @@ export default function DroneTable({ filters }: Props) {
             {data.data.map((drone: DroneEvent) => {
               const isBeingTriaged = isTriaging && triageVars?.id === drone.id;
               const isActive = drone.status === 'active';
+              const rowError = rowErrors[drone.id];
+
+              const handleTriage = (status: TriageStatus) => {
+                setRowErrors((prev) => { const next = { ...prev }; delete next[drone.id]; return next; });
+                triage({ id: drone.id, status });
+              };
 
               return (
                 <tr key={drone.id} data-threat={drone.threatLevel}>
@@ -103,7 +115,7 @@ export default function DroneTable({ filters }: Props) {
                       className="btn btn--mitigate"
                       disabled={!isActive || isBeingTriaged}
                       aria-label={`Mitigate ${drone.label}`}
-                      onClick={() => triage({ id: drone.id, status: 'mitigated' })}
+                      onClick={() => handleTriage('mitigated')}
                     >
                       {isBeingTriaged ? '…' : 'Mitigate'}
                     </button>
@@ -111,10 +123,11 @@ export default function DroneTable({ filters }: Props) {
                       className="btn btn--dismiss"
                       disabled={!isActive || isBeingTriaged}
                       aria-label={`Dismiss ${drone.label}`}
-                      onClick={() => triage({ id: drone.id, status: 'dismissed' })}
+                      onClick={() => handleTriage('dismissed')}
                     >
                       {isBeingTriaged ? '…' : 'Dismiss'}
                     </button>
+                    {rowError && <span className="row-error">{rowError}</span>}
                   </td>
                 </tr>
               );
