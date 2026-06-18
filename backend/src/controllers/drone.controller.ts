@@ -1,19 +1,25 @@
 import { NextFunction, Request, Response } from 'express';
+import { ValidationError } from '../lib/errors';
 import { DroneService } from '../services/drone.service';
 import { createDroneSchema, listDroneQuerySchema, updateDroneSchema } from '../schemas/drone.schema';
+
+function validate<T>(
+  result: { success: true; data: T } | { success: false; error: { flatten(): unknown } },
+  message: string,
+): T {
+  if (!result.success) throw new ValidationError(message, result.error.flatten());
+  return result.data;
+}
 
 export function createDroneController(svc: DroneService) {
   return {
     list(req: Request, res: Response, next: NextFunction): void {
       try {
-        const parsed = listDroneQuerySchema.safeParse(req.query);
-        if (!parsed.success) {
-          res.status(400).json({ error: 'Invalid query params', details: parsed.error.flatten() });
-          return;
-        }
-        const { page, limit, status, threatLevel } = parsed.data;
-        const result = svc.list(page, limit, { status, threatLevel });
-        res.status(200).json(result);
+        const { page, limit, status, threatLevel } = validate(
+          listDroneQuerySchema.safeParse(req.query),
+          'Invalid query params',
+        );
+        res.status(200).json(svc.list(page, limit, { status, threatLevel }));
       } catch (err) {
         next(err);
       }
@@ -21,13 +27,8 @@ export function createDroneController(svc: DroneService) {
 
     create(req: Request, res: Response, next: NextFunction): void {
       try {
-        const parsed = createDroneSchema.safeParse(req.body);
-        if (!parsed.success) {
-          res.status(400).json({ error: 'Invalid request body', details: parsed.error.flatten() });
-          return;
-        }
-        const drone = svc.create(parsed.data);
-        res.status(201).json(drone);
+        const input = validate(createDroneSchema.safeParse(req.body), 'Invalid request body');
+        res.status(201).json(svc.create(input));
       } catch (err) {
         next(err);
       }
@@ -35,9 +36,7 @@ export function createDroneController(svc: DroneService) {
 
     getById(req: Request, res: Response, next: NextFunction): void {
       try {
-        const id = String(req.params['id']);
-        const drone = svc.getById(id);
-        res.status(200).json(drone);
+        res.status(200).json(svc.getById(String(req.params['id'])));
       } catch (err) {
         next(err);
       }
@@ -46,13 +45,8 @@ export function createDroneController(svc: DroneService) {
     updateStatus(req: Request, res: Response, next: NextFunction): void {
       try {
         const id = String(req.params['id']);
-        const parsed = updateDroneSchema.safeParse(req.body);
-        if (!parsed.success) {
-          res.status(400).json({ error: 'Invalid request body', details: parsed.error.flatten() });
-          return;
-        }
-        const drone = svc.updateStatus(id, parsed.data);
-        res.status(200).json(drone);
+        const input = validate(updateDroneSchema.safeParse(req.body), 'Invalid request body');
+        res.status(200).json(svc.updateStatus(id, input));
       } catch (err) {
         next(err);
       }
