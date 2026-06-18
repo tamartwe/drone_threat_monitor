@@ -101,7 +101,7 @@ export default function DroneTable({ filters }: Props) {
                   <td className="cell-actions">
                     <button
                       className="btn btn--mitigate"
-                      disabled={!isActive || isTriaging}
+                      disabled={!isActive || isBeingTriaged}
                       aria-label={`Mitigate ${drone.label}`}
                       onClick={() => triage({ id: drone.id, status: 'mitigated' })}
                     >
@@ -109,7 +109,7 @@ export default function DroneTable({ filters }: Props) {
                     </button>
                     <button
                       className="btn btn--dismiss"
-                      disabled={!isActive || isTriaging}
+                      disabled={!isActive || isBeingTriaged}
                       aria-label={`Dismiss ${drone.label}`}
                       onClick={() => triage({ id: drone.id, status: 'dismissed' })}
                     >
