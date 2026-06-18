@@ -30,8 +30,9 @@ export default function DroneTable({ filters }: Props) {
   const { mutate: triage, isPending: isTriaging, variables: triageVars } = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TriageStatus }) =>
       updateDroneStatus(id, status),
-    onSuccess: (_data, { id }) => {
-      setRowErrors((prev) => { const next = { ...prev }; delete next[id]; return next; });
+    onSuccess: () => {
+      // Fresh server data is about to arrive via invalidation — no stale errors are relevant.
+      setRowErrors({});
       queryClient.invalidateQueries({ queryKey: ['drones'] });
     },
     onError: (err, { id }) => {
