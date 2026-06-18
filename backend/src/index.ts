@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { createApp } from './app';
 import { createDroneStore } from './dal/drone.store';
 import { logger } from './lib/logger';
