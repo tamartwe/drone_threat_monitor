@@ -197,6 +197,37 @@ describe('PATCH /api/drones/:id', () => {
 });
 
 // ---------------------------------------------------------------------------
+// GET /api/drones/:id
+// ---------------------------------------------------------------------------
+describe('GET /api/drones/:id', () => {
+  let droneId: string;
+
+  beforeEach(async () => {
+    const res = await request(app)
+      .post('/api/drones')
+      .send({ label: 'Echo', threatLevel: 'medium' });
+    droneId = res.body.id;
+  });
+
+  it('returns the drone event by id', async () => {
+    const res = await request(app).get(`/api/drones/${droneId}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(droneId);
+    expect(res.body.label).toBe('Echo');
+    expect(res.body.threatLevel).toBe('medium');
+    expect(res.body.status).toBe('active');
+  });
+
+  it('returns 404 for a non-existent id', async () => {
+    const res = await request(app).get('/api/drones/00000000-0000-0000-0000-000000000000');
+
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // GET /health
 // ---------------------------------------------------------------------------
 describe('GET /health', () => {

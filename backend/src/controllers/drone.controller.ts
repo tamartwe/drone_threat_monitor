@@ -33,6 +33,16 @@ export function createDroneController(svc: DroneService) {
       }
     },
 
+    getById(req: Request, res: Response, next: NextFunction): void {
+      try {
+        const id = String(req.params['id']);
+        const drone = svc.getById(id);
+        res.status(200).json(drone);
+      } catch (err) {
+        next(err);
+      }
+    },
+
     updateStatus(req: Request, res: Response, next: NextFunction): void {
       try {
         const id = String(req.params['id']);

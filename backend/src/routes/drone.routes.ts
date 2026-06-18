@@ -5,6 +5,7 @@ export function createDroneRouter(controller: ReturnType<typeof createDroneContr
   const router = Router();
   router.get('/', controller.list);
   router.post('/', controller.create);
+  router.get('/:id', controller.getById);
   router.patch('/:id', controller.updateStatus);
   return router;
 }
